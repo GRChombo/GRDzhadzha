@@ -78,7 +78,7 @@ void KerrBHScalarLevel::specificPostTimeStep()
                        disable_simd());
 
     // At any level, but after the min_level timestep
-    int min_level = m_p.extraction_params.min_extraction_level();
+    int min_level = 0.;
     bool calculate_diagnostics = at_level_timestep_multiple(min_level);
     if (calculate_diagnostics)
     {
@@ -94,16 +94,20 @@ void KerrBHScalarLevel::specificPostTimeStep()
                        m_state_diagnostics, SKIP_GHOST_CELLS);
 
         // excise within/outside specified radii, no simd
-        BoxLoops::loop(
-            ExcisionDiagnostics<ScalarFieldWithPotential, KerrSchild>(
-                m_dx, m_p.center, kerr_bh, m_p.inner_r, m_p.outer_r),
-            m_state_diagnostics, m_state_diagnostics, SKIP_GHOST_CELLS,
-            disable_simd());
+        if (m_p.activate_extraction == 1)
+        {
+            BoxLoops::loop(
+                ExcisionDiagnostics<ScalarFieldWithPotential, KerrSchild>(
+                    m_dx, m_p.center, kerr_bh, m_p.inner_r, m_p.outer_r),
+                m_state_diagnostics, m_state_diagnostics, SKIP_GHOST_CELLS,
+                disable_simd());
+        }
     }
 
     // write out the integral after each timestep on minimum level
     if (m_p.activate_extraction == 1)
     {
+        min_level = m_p.extraction_params.min_extraction_level();
         if (m_level == min_level)
         {
             bool first_step = (m_time == m_dt);
